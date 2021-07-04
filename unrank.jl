@@ -3,8 +3,8 @@ using StaticArrays
 using BenchmarkTools
 
 function unrank2d(n)
-    # Roughly O(1) for n :: Int64.
-    # Constant: 2ns = sqrt runtime +5% -0%
+    # O(1) for n :: Int64.
+    # Constant: 1.6ns = sqrt runtime +5% -0% (VERY FAST)
     # Max input: 2^(NN-2)-1 for IntNN
     a = Int(round(sqrt(2n)))
     b = n-(a*(a-1))>>1
@@ -14,15 +14,13 @@ function unrank2d(n)
 end
 
 function unrank3d(n)
-    # Roughly O(1) for n :: Int64.
-    # Constant: 2ns = sqrt runtime +5% -0%
-    # Max input: 2^(NN-2)-1 for IntNN
-    a = Int(floor((6n)^(1/3)))
+    # O(1) for n :: Int64.
+    # Constant: 80ns ≈ 50x unrank2d ≈ 5x memory read or write
+    # Max input: ??? (>= 10^8)
+    a = Int(floor((6n+(6n)^(1/3))^(1/3)))
     n -= (a-1)*a*(a+1)÷6
     b = Int(round(sqrt(2n)))
     c = n-(b*(b-1))>>1
-    #Depending on benchmark,
-    # >>1 makes unrank2d 1.1-5x faster than ÷2.
     a,b,c
 end
 
@@ -52,9 +50,47 @@ function unrank!(array, d,n)
         array[d] = a
         return unrank!(array, 2, n - (a-1)*a*(a+1)÷6)
     end
+    if d == 4
+        a = Int(floor((24n+12)^(1/4)-.5))
+        array[d] = a
+        return unrank!(array, 3, n - (a-1)*a*(a+1)*(a+2)÷24)
+    end
 end
 
-### unrank2d Tests
+#A simple iterative approach for testing
+start(d) = MVector{d}(ones(Int,d))
+next!(vector) = next!(vector, length(vector))
+function next!(vector, i)
+    if i > 1 && vector[i] == vector[i-1]
+        vector[i] = 1
+        return next!(vector, i-1)
+    else
+        vector[i] += 1
+        return vector
+    end
+end
+
+#Testing
+function test!(f,d,n=10^5)
+    j = start(d)
+    for i in 1:n
+        try
+            @assert f(i) == j
+        catch exeption
+            if i > 1
+                println("f(",i-1,") = ",f(i-1)," = ",f(i-1))
+            end
+            println("f(",i,") = ",f(i)," ≠ ",j)
+            throw(exeption)
+        end
+        next!(j)
+    end
+end
+
+test!(collect ∘ unrank2d,2)
+test!(collect ∘ unrank3d,3)
+
+### unrank2d benchmarks, empirical runtime analysis, and old tests
 #=
 println(collect(unrank2d.(1:10)))
 @assert collect(unrank2d.(1:10)) == [(1, 1), (2, 1), (2, 2), (3, 1), (3, 2),
