@@ -1,4 +1,6 @@
 using Plots
+using StaticArrays
+using BenchmarkTools
 
 function unrank2d(n)
     # Roughly O(1) for n :: Int64.
@@ -32,7 +34,8 @@ function unrank(d,n)
     elseif d == 3
         return unrank3d(n)
     end=#
-    unrank!(Vector{typeof(n)}(undef, d), d,n)
+    unrank!(zeros(MVector{d,typeof(n)}), d,n)
+    #unrank!(Vector{typeof(n)}(undef,d), d,n)
 end
 function unrank!(array, d,n)
     if d == 1
