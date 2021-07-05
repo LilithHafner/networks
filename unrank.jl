@@ -1,4 +1,3 @@
-using Plots
 using StaticArrays
 using BenchmarkTools
 
@@ -104,6 +103,9 @@ function unrank!(array, d, n)
     unrank!(array, d-1, n-binomial(array[d]+d-2,d))
 end
 function unrank(d, n)
+    #O(d^2)
+    #runtime ≈ 3,000ns + 15ns*d^2
+    #1500x unrank2d, 10x-40x unrank3d-unrank5d
     unrank!(MVector{d}(ones(typeof(d),d)), d, n)
 end
 
@@ -145,6 +147,18 @@ test!(collect ∘ unrank5d,5)
 test!(i -> reverse(unrank(3,i)),3,3*10^3)
 test!(i -> reverse(unrank(17,i)),17,10^3)
 println("This typically doens't print in atom ","Pass")
+
+#= unrank benchmarks
+using Random
+using Plots
+x = shuffle([1:9...,10:3:29...,30:20:90...,200])
+t = [@belapsed unrank($(xi),4870923245) seconds=.1
+    for xi in x]
+scatter(x,t)
+for (x,t) in zip(x,t)
+    println(x,",",t*1e9)
+end
+=#
 
 ### unrank2d benchmarks, empirical runtime analysis, and old tests
 #=
