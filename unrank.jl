@@ -72,6 +72,40 @@ function unrank_permutation(d,n)
     unrank_permutation!(MVector{d,typeof(n)}(1:d),d,n)
 end
 
+function rootfactorial(d)
+    out = 1.0#factorial(min(n,20))^(1/n)
+    for i in 2:d
+        out *= i^(1/d)
+    end
+    out
+end
+function inverse_binomial(d, n)
+    #Returns the lowest a such that binomial(a,d) ≥ n
+    a = max(d,Int(ceil(rootfactorial(d)*n^(1/d))))
+    n_a = binomial(a,d)
+    itterations = 0
+    while n_a < n
+        itterations += 1
+        a += 1
+        n_a *= a
+        n_a ÷= a-d
+    end
+    @assert itterations < d
+    a
+end
+function unrank_a(d, n)
+    inverse_binomial(d,n)+1-d
+end
+function unrank!(array, d, n)
+    array[d] = unrank_a(d,n)
+    if d == 1
+        return array
+    end
+    unrank!(array, d-1, n-binomial(array[d]+d-2,d))
+end
+function unrank(d, n)
+    unrank!(MVector{d}(ones(typeof(d),d)), d, n)
+end
 
 #A simple iterative approach for testing
 start(d) = MVector{d}(ones(Int,d))
@@ -102,11 +136,15 @@ function test!(f,d,n=10^5)
         next!(j)
     end
 end
+
 test!(vcat ∘ unrank1d,1)
 test!(collect ∘ unrank2d,2)
 test!(collect ∘ unrank3d,3)
 test!(collect ∘ unrank4d,4)
 test!(collect ∘ unrank5d,5)
+test!(i -> reverse(unrank(3,i)),3,3*10^3)
+test!(i -> reverse(unrank(17,i)),17,10^3)
+println("This typically doens't print in atom ","Pass")
 
 ### unrank2d benchmarks, empirical runtime analysis, and old tests
 #=
