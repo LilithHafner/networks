@@ -1,3 +1,7 @@
+# TODO
+# alpha renaming to conform to x = binomial(n,k): d -> k, n -> x, a -> n.
+# create cohesive interface (perhaps export only a varient of unrank!)
+
 #Small special case unranking
 unrank1d(n) = n # 0.05ns ≈ .05ns * d^2
 function unrank2d(n)
