@@ -3,6 +3,7 @@
 # create cohesive interface (perhaps export only a varient of unrank!)
 
 #Small special case unranking
+unrank0d(n) = nothing
 unrank1d(n) = n # 0.05ns ≈ .05ns * d^2
 function unrank2d(n)
     # O(1) for n :: Int64.
@@ -75,13 +76,15 @@ function inverse_binomial(d, n)
     a
 end
 function unrank!(array, d, n)
-    array[d] = inverse_binomial(d,n)+1-d
-    if d == 1
+    if d == 0
         return array
     end
+    array[d] = inverse_binomial(d,n)+1-d
     unrank!(array, d-1, n-binomial(array[d]+d-2,d))
 end
 function unrank(d, n)
+    @assert d >= 0
+    @assert n > 0
     #O(d^2)
     #for d < 10 runtime ≈ 65ns + 6ns * d + 28ns*d^2
     #for large d runtime ≈ 15ns * d^2
