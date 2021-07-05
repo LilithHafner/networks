@@ -1,6 +1,4 @@
-using StaticArrays
-using BenchmarkTools
-
+#Small special case unranking
 unrank1d(n) = n # 0.05ns ≈ .05ns * d^2
 function unrank2d(n)
     # O(1) for n :: Int64.
@@ -50,29 +48,9 @@ function unrank5d(n)
     e,d,c,b,a
 end
 
-function swap(array,i,j)
-    temp = array[i]
-    array[i] = array[j]
-    array[j] = temp
-end
-function unrank_permutation!(array,d,n)
-    #Algorithm source:
-    #Wendy Myrvold & Frank Ruskey
-    #Ranking and unranking permutations in linear time (2001)
-    #http://webhome.cs.uvic.ca/~ruskey/Publications/RankPerm/MyrvoldRuskey.pdf
-    if d > 0
-        swap(array, d, n%d+1)
-        unrank_permutation!(array, d-1, n÷d)
-    else
-        array
-    end
-end
-function unrank_permutation(d,n)
-    unrank_permutation!(MVector{d,typeof(n)}(1:d),d,n)
-end
-
+#General unranking
 function rootfactorial(d)
-    out = 1.0#factorial(min(n,20))^(1/n)
+    out = 1.0 #factorial(min(n,20))^(1/n) #This seems to make unrank slower
     for i in 2:d
         out *= i^(1/d)
     end
@@ -92,11 +70,8 @@ function inverse_binomial(d, n)
     @assert itterations < d
     a
 end
-function unrank_a(d, n)
-    inverse_binomial(d,n)+1-d
-end
 function unrank!(array, d, n)
-    array[d] = unrank_a(d,n)
+    array[d] = inverse_binomial(d,n)+1-d
     if d == 1
         return array
     end
@@ -109,10 +84,11 @@ function unrank(d, n)
     #{2000, 120, 4, 5, 4}x the runtime of unrank{1:5}d
     unrank!(ones(typeof(n),d), d, n)
     #unrank!(MVector{d}(ones(typeof(n),d)), d, n)
+    # (This would require d to be const and using StaticArrays)
 end
 
 #A simple iterative approach for testing
-start(d) = MVector{d}(ones(Int,d))
+start(d) = ones(Int,d)
 next!(vector) = next!(vector, length(vector))
 function next!(vector, i)
     if i > 1 && vector[i] == vector[i-1]
@@ -140,19 +116,23 @@ function test!(f,d,n=10^5)
         next!(j)
     end
 end
+function quicktest!()
+    test!(vcat ∘ unrank1d,1)
+    test!(collect ∘ unrank2d,2)
+    test!(collect ∘ unrank3d,3)
+    test!(collect ∘ unrank4d,4)
+    test!(collect ∘ unrank5d,5)
+    test!(i -> reverse(unrank(1,i)),1,3*10^2)
+    test!(i -> reverse(unrank(3,i)),3,3*10^3)
+    test!(i -> reverse(unrank(17,i)),17,10^3)
+    println("unrank passed quicktest")
+end
 
-test!(vcat ∘ unrank1d,1)
-test!(collect ∘ unrank2d,2)
-test!(collect ∘ unrank3d,3)
-test!(collect ∘ unrank4d,4)
-test!(collect ∘ unrank5d,5)
-test!(i -> reverse(unrank(3,i)),3,3*10^3)
-test!(i -> reverse(unrank(17,i)),17,10^3)
-println("This typically doens't print in atom ","Pass")
-
-#= unrank benchmarks
+#= general unrank benchmarks
+using BenchmarkTools
 using Random
 using Plots
+
 x = shuffle([1:9...,10:3:29...,30:20:90...,200])
 t1 = [@belapsed unrank($(xi), 4870923245) seconds=.1
     for xi in x]
@@ -163,44 +143,4 @@ scatter!(x,t2)
 for (x,t1,t2) in zip(x,t1,t2)
     println(x,",",t1*1e9,",",t2*1e9)
 end
-=#
-
-### unrank2d benchmarks, empirical runtime analysis, and old tests
-#=
-println(collect(unrank2d.(1:10)))
-@assert collect(unrank2d.(1:10)) == [(1, 1), (2, 1), (2, 2), (3, 1), (3, 2),
-                                     (3, 3), (4, 1), (4, 2), (4, 3), (4, 4)]
-@assert unrank2d(87109723841) == (417396, 222131)
-
-#@benchmark unrank2d(9720290439024)
-
-function test(n)
-    try
-        @assert typeof(n) <: Integer
-        @assert n >= 1
-        a,b = unrank2d(n)
-        @assert a >= 1
-        @assert b >= 1
-
-        @assert b <= a
-        @assert a*(a-1)÷2+b == n
-    catch
-        println(typeof(n))
-        println(n)
-    end
-end
-
-EVALS = 1000
-SAMPLES = 30
-function plt(x)
-    x = shuffle(collect(x))
-    t = [minimum([@elapsed (for i in 1:EVALS unrank2d(xi) end)
-        for j in 1:SAMPLES])/EVALS for xi in x]
-    for xi in x test(xi) end
-    scatter(x,t)
-end
-
-plot(plt(1:10^2),
-     plt(2^62-1:-(2^62-1)÷10^2:1),
-    layout=(2,1))
 =#
