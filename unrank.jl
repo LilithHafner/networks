@@ -2,38 +2,53 @@ using Plots
 using StaticArrays
 using BenchmarkTools
 
-unrank1d(n) = n
+unrank1d(n) = n # 0.05ns ≈ .05ns * d^2
 function unrank2d(n)
     # O(1) for n :: Int64.
-    # Constant: 1.6ns = sqrt runtime +5% -0% (VERY FAST)
+    # Constant: 1.8ns = sqrt runtime +5% -0% (VERY FAST) ≈ .5ns * d^2
     # Max input: 2^(NN-2)-1 for IntNN
     b = Int(round(sqrt(2n)))
-    a = n-(b*(b-1))>>1
+    a = n - (b*(b-1))>>1
     #Depending on benchmark,
     # >>1 makes unrank2d 1.1-5x faster than ÷2.
     b,a
 end
 function unrank3d(n)
     # O(1) for n :: Int64.
-    # Constant: 80ns ≈ 50x unrank2d ≈ 5x memory read or write
+    # Constant: 80ns ≈ 50x unrank2d ≈ 5x memory read or write ≈ 9ns * d^2
     # Max input: ??? (>= 10^8)
     c = Int(floor((6n+(6n)^(1/3))^(1/3)))
     n -= (c-1)*c*(c+1)÷6
     b = Int(round(sqrt(2n)))
-    a = n- (b*(b-1))>>1
+    a = n - (b*(b-1))>>1
     c,b,a
 end
 function unrank4d(n)
     # O(1) for n :: Int64.
-    # Constant: 105ns ≈ 1.3x unrank3d ≈ 6x memory read or write
+    # Constant: 100ns ≈ 1.3x unrank3d ≈ 6x memory read or write ≈ 7ns * d^2
     # Max input: ??? (>= 10^8)
     d = Int(floor(sqrt(sqrt(24n+2.5sqrt(24n)))-.5))
     n -= (d-1)*d*(d+1)*(d+2)÷24
     c = Int(floor((6n+(6n)^(1/3))^(1/3)))
     n -= (c-1)*c*(c+1)÷6
     b = Int(round(sqrt(2n)))
-    a = n- (b*(b-1))>>1
+    a = n - (b*(b-1))>>1
     d,c,b,a
+end
+function unrank5d(n)
+    # O(1) for n :: Int64.
+    # Constant: 200ns ≈ 2x unrank4d ≈ 11x memory read or write ≈ 8ns * d^2
+    # Max input: ??? (>= 10^8)
+    e1 = (120n)^(1/5)
+    e = Int(floor((120n+5*e1^3+11*e1)^(1/5)-1))
+    n -= (e-1)*e*(e+1)*(e+2)*(e+3)÷120
+    d = Int(floor(sqrt(sqrt(24n+2.5sqrt(24n)))-.5))
+    n -= (d-1)*d*(d+1)*(d+2)÷24
+    c = Int(floor((6n+(6n)^(1/3))^(1/3)))
+    n -= (c-1)*c*(c+1)÷6
+    b = Int(round(sqrt(2n)))
+    a = n - (b*(b-1))>>1
+    e,d,c,b,a
 end
 
 function unrank(d,n)
@@ -102,6 +117,7 @@ test!(vcat ∘ unrank1d,1)
 test!(collect ∘ unrank2d,2)
 test!(collect ∘ unrank3d,3)
 test!(collect ∘ unrank4d,4)
+test!(collect ∘ unrank5d,5)
 
 ### unrank2d benchmarks, empirical runtime analysis, and old tests
 #=
