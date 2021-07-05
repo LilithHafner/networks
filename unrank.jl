@@ -51,38 +51,27 @@ function unrank5d(n)
     e,d,c,b,a
 end
 
-function unrank(d,n)
-    #=if d == 1
-        return [n]
-    elseif d == 2
-        return unrank2d(n)
-    elseif d == 3
-        return unrank3d(n)
-    end=#
-    unrank!(zeros(MVector{d,typeof(n)}), d,n)
-    #unrank!(Vector{typeof(n)}(undef,d), d,n)
+function swap(array,i,j)
+    temp = array[i]
+    array[i] = array[j]
+    array[j] = temp
 end
-function unrank!(array, d,n)
-    if d == 1
-        array[d] = n
-        return array
-    end
-    if d == 2
-        a = Int(round(sqrt(2n)))
-        array[d] = a
-        return unrank!(array, 1, n -(a*(a-1))>>1)
-    end
-    if d == 3
-        a = Int(floor((6n)^(1/3)))
-        array[d] = a
-        return unrank!(array, 2, n - (a-1)*a*(a+1)÷6)
-    end
-    if d == 4
-        a = Int(floor((24n+12)^(1/4)-.5))
-        array[d] = a
-        return unrank!(array, 3, n - (a-1)*a*(a+1)*(a+2)÷24)
+function unrank_permutation!(array,d,n)
+    #Algorithm source:
+    #Wendy Myrvold & Frank Ruskey
+    #Ranking and unranking permutations in linear time (2001)
+    #http://webhome.cs.uvic.ca/~ruskey/Publications/RankPerm/MyrvoldRuskey.pdf
+    if d > 0
+        swap(array, d, n%d+1)
+        unrank_permutation!(array, d-1, n÷d)
+    else
+        array
     end
 end
+function unrank_permutation(d,n)
+    unrank_permutation!(MVector{d,typeof(n)}(1:d),d,n)
+end
+
 
 #A simple iterative approach for testing
 start(d) = MVector{d}(ones(Int,d))
