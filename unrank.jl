@@ -106,7 +106,7 @@ function unrank(d, n)
     #O(d^2)
     #runtime ≈ 3,000ns + 15ns*d^2
     #1500x unrank2d, 10x-40x unrank3d-unrank5d
-    unrank!(MVector{d}(ones(typeof(d),d)), d, n)
+    unrank!(MVector{d}(ones(typeof(n),d)), d, n)
 end
 
 #A simple iterative approach for testing
