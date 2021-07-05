@@ -2,26 +2,38 @@ using Plots
 using StaticArrays
 using BenchmarkTools
 
+unrank1d(n) = n
 function unrank2d(n)
     # O(1) for n :: Int64.
     # Constant: 1.6ns = sqrt runtime +5% -0% (VERY FAST)
     # Max input: 2^(NN-2)-1 for IntNN
-    a = Int(round(sqrt(2n)))
-    b = n-(a*(a-1))>>1
+    b = Int(round(sqrt(2n)))
+    a = n-(b*(b-1))>>1
     #Depending on benchmark,
     # >>1 makes unrank2d 1.1-5x faster than ÷2.
-    a,b
+    b,a
 end
-
 function unrank3d(n)
     # O(1) for n :: Int64.
     # Constant: 80ns ≈ 50x unrank2d ≈ 5x memory read or write
     # Max input: ??? (>= 10^8)
-    a = Int(floor((6n+(6n)^(1/3))^(1/3)))
-    n -= (a-1)*a*(a+1)÷6
+    c = Int(floor((6n+(6n)^(1/3))^(1/3)))
+    n -= (c-1)*c*(c+1)÷6
     b = Int(round(sqrt(2n)))
-    c = n-(b*(b-1))>>1
-    a,b,c
+    a = n- (b*(b-1))>>1
+    c,b,a
+end
+function unrank4d(n)
+    # O(1) for n :: Int64.
+    # Constant: 105ns ≈ 1.3x unrank3d ≈ 6x memory read or write
+    # Max input: ??? (>= 10^8)
+    d = Int(floor(sqrt(sqrt(24n+2.5sqrt(24n)))-.5))
+    n -= (d-1)*d*(d+1)*(d+2)÷24
+    c = Int(floor((6n+(6n)^(1/3))^(1/3)))
+    n -= (c-1)*c*(c+1)÷6
+    b = Int(round(sqrt(2n)))
+    a = n- (b*(b-1))>>1
+    d,c,b,a
 end
 
 function unrank(d,n)
@@ -86,9 +98,10 @@ function test!(f,d,n=10^5)
         next!(j)
     end
 end
-
+test!(vcat ∘ unrank1d,1)
 test!(collect ∘ unrank2d,2)
 test!(collect ∘ unrank3d,3)
+test!(collect ∘ unrank4d,4)
 
 ### unrank2d benchmarks, empirical runtime analysis, and old tests
 #=
