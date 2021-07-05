@@ -104,9 +104,11 @@ function unrank!(array, d, n)
 end
 function unrank(d, n)
     #O(d^2)
-    #runtime ≈ 3,000ns + 15ns*d^2
-    #1500x unrank2d, 10x-40x unrank3d-unrank5d
-    unrank!(MVector{d}(ones(typeof(n),d)), d, n)
+    #for d < 10 runtime ≈ 65ns + 6ns * d + 28ns*d^2
+    #for large d runtime ≈ 15ns * d^2
+    #{2000, 120, 4, 5, 4}x the runtime of unrank{1:5}d
+    unrank!(ones(typeof(n),d), d, n)
+    #unrank!(MVector{d}(ones(typeof(n),d)), d, n)
 end
 
 #A simple iterative approach for testing
@@ -152,11 +154,14 @@ println("This typically doens't print in atom ","Pass")
 using Random
 using Plots
 x = shuffle([1:9...,10:3:29...,30:20:90...,200])
-t = [@belapsed unrank($(xi),4870923245) seconds=.1
+t1 = [@belapsed unrank($(xi), 4870923245) seconds=.1
     for xi in x]
-scatter(x,t)
-for (x,t) in zip(x,t)
-    println(x,",",t*1e9)
+t2 = [@belapsed unrank!($(ones(Int,xi)), $(xi), 4870923245) seconds=.1
+    for xi in x]
+scatter(x,t1)
+scatter!(x,t2)
+for (x,t1,t2) in zip(x,t1,t2)
+    println(x,",",t1*1e9,",",t2*1e9)
 end
 =#
 
