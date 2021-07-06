@@ -5,8 +5,17 @@ include("unrank.jl")
 #entries to have a new local rank equal to rank relative to
 #all values equal to vector[index] = rank of 1.
 
-
+#TODO support total node count up to at least 2^30, ideally 2^60
+#TODO benchmark and speed up. Right now ~14ns/byte. Possible 10x~100x speedup
+#TODO support seamless transition to bigint for larger
 function populate!(edges, group_sizes, m, probability)
+    # WARNING entire region must fit in an Int
+    @assert prod(BigInt.(group_sizes[m])) < typemax(Int)
+    #O(output size)
+    # ~ 500ns per edge
+    # ~ 35ns per edge*dimension
+    # ~ .6ns per bit @ 2^60
+    # ~ 5ns per bit @ 100
     d = length(m)
     k = 1/log(1-probability)
     Σ_group_sizes = cumsum(group_sizes)
@@ -24,16 +33,20 @@ function populate!(edges, group_sizes, m, probability)
     end=#
 
     while true
-        increment = Int(floor(k*log(1-rand()))+1)
+        increment = Int(floor(k*log(1-rand())))+1 #~20.ns 17%
 
-        #=TODO benchmark is this special case helpful?
-        if last(current_edge)+increment <= upper_limit[i]
+        #current_edge[length(current_edge)] += 1 #1ns
+
+        #= this special case can have a final runtime impact of
+        #  ~ 15% faster — 5% slower
+        if last(current_edge)+increment <= last(upper_limit)
             current_edge[length(current_edge)] += increment
-            push!(edges, vector(current_edge))
+            push!(edges, Vector(current_edge))
             continue
-        end #TODO benchmark should we special case 2D as well?=#
+        end=#
+        #Should we special case 2D as well? (Guess: not here, but in unrankr!)
+
         td = 1 #trailing dimensions
-        i = 1
         for i in length(m):-1:1#We start from the end for lexegraphic order
             room = binomial(upper_limit[i]-current_edge[i]+td, td)
             #if we can finish progressing to the next edge placement, finish.
@@ -70,9 +83,30 @@ function populate!(edges, group_sizes, m, probability)
         end
     end
 end
+populate(args...) = populate!([], args...)
 
 edges = []
 group_sizes = [2,4,3]
 m = [1,2,2,2]
 probability = .999
-display(populate!(e, group_sizes, m, probability))
+display(populate!(edges, group_sizes, m, probability))
+
+using BenchmarkTools
+function time_per_edge_probability(args... ; n=100)
+    lengths = []
+    times = [@elapsed push!(lengths,length(populate(args...)))
+            for i in 1:n]
+    t,l = minimum(zip(times./lengths,lengths))
+    #l = mean(lengths)
+    l, t*1e9
+end
+function time_per_edge(group_sizes, m, edges ; n=10)
+    size = prod(group_sizes[m])/prod(factorial(count(x->x==i, m)) for i in 1:length(group_sizes))
+    probability = edges/size
+    lengths = []
+    times = [@elapsed push!(lengths,length(populate(group_sizes, m, probability)))
+            for i in 1:n]
+    t,l = minimum(zip(times./lengths,lengths))
+    #l = mean(lengths)
+    l, t*1e9
+end

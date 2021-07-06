@@ -86,6 +86,10 @@ function unrankr!(array, d, n, limit, i, v)
     if d == 0
         return array
     end
+    if d == 1#This special case gives ~2x speedup
+        array[i] = v + n - 1
+        return array
+    end#TODO extend this?
     total = binomial(limit+d-v,d)
     ib = inverse_binomial(d,total-n+1)
     array[i] = limit-ib+d
