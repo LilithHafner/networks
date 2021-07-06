@@ -15,7 +15,7 @@ include("unrank.jl")
 ###                                                             ###
 function generate_edges_in_cell(group_sizes, m, edges)
   nodes_from_each_group = [count(==(i), m) for i=1:length(group_sizes)]
-  option_count = binomial.(group_sizes, nodes_from_each_group)
+  option_count = binomial.(group_sizes.+nodes_from_each_group.-1, nodes_from_each_group)
   Π_option_count = vcat([1],cumprod(option_count))
   Σ_group_sizes = vcat([0],cumsum(group_sizes))
   [vcat((unrank(nodes_from_each_group[i],
@@ -59,7 +59,7 @@ function grasshopper(n,probability)
   out
 end
 
-group_sizes = [20,40,30]
+group_sizes = [2,4,3]
 m = [1,2,2,2]
 edges = 10
 display(generate_edges_in_cell(group_sizes, m, edges))

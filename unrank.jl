@@ -82,6 +82,18 @@ function unrank!(array, d, n)
     array[d] = inverse_binomial(d,n)+1-d
     unrank!(array, d-1, n-binomial(array[d]+d-2,d))
 end
+function unrankr!(array, d, n, limit, i, v)
+    if d == 0
+        return array
+    end
+    total = binomial(limit+d-v,d)
+    ib = inverse_binomial(d,total-n+1)
+    array[i] = limit-ib+d
+    unrankr!(array, d-1, n-total+binomial(ib,d), limit, i+1, array[i])
+end
+unrankr!(array, d, n, limit, i) = unrankr!(array, d, n, limit, i, array[i])
+unrankr!(array, d, n, limit)    = unrankr!(array, d, n, limit, 1, 1)
+
 function unrank(d, n)
     @assert d >= 0
     @assert n > 0
@@ -132,7 +144,8 @@ function quicktest!()
     test!(i -> reverse(unrank(1,i)),1,3*10^2)
     test!(i -> reverse(unrank(3,i)),3,3*10^3)
     test!(i -> reverse(unrank(17,i)),17,10^3)
-    println("unrank passed quicktest")
+
+    println("unrank passed quicktest (unrankr! not tested)")
 end
 
 #= general unrank benchmarks
