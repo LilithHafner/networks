@@ -1,12 +1,21 @@
 include("unrank.jl")
 
+
 #TODO support total node count up to at least 2^30, ideally 2^60
+#TODO bugfix
+# hyperkron_edge_count(3,fill(10000,10), 10^5); works
+# hyperkron_edge_count(3,fill(100000,10), 10^5); hangs
 #TODO benchmark and speed up. Right now ~14ns/byte. Possible 10x~100x speedup
 #TODO support seamless transition to bigint for larger
 function populate!(edges, group_sizes, m, probability)
     if probability == 0 return edges end
-    # WARNING entire region must fit in an Int
-    @assert prod(BigInt.(group_sizes[m])) < typemax(Int)
+    # WARNING this is not quite strict enough:
+    if prod(BigInt.(group_sizes[m])) > typemax(Int)
+        throw(OverflowError("Entire region must fit in an Int"))
+    end
+    if probability < 0 || probability > 1
+        throw(ArgumentError("edge probability "*string(probability)*" ∉ [0,1]"))
+    end
     #O(output size)
     # ~ 500ns per edge
     # ~ 35ns per edge*dimension
@@ -85,29 +94,10 @@ populate(args...) = populate!([], args...)
    [[1, 3, 3], [1, 3, 4], [1, 3, 5], [1, 4, 4], [1, 4, 5], [1, 5, 5],
     [2, 3, 3], [2, 3, 4], [2, 3, 5], [2, 4, 4], [2, 4, 5], [2, 5, 5]]
 
-using BenchmarkTools
-function edges_to_probability(group_sizes, m, edges)
-    size = prod(group_sizes[m])/
-           prod(factorial(count(x->x==i, m)) for i in 1:length(group_sizes))
-    probability = edges/size
-    group_sizes, m, probability
-end
-function time_per_edge_probability(args... ; n=100)
-    lengths = []
-    times = [@elapsed push!(lengths,length(populate(args...)))
-            for i in 1:n]
-    t,l = minimum(zip(times./lengths,lengths))
-    l, t*1e9
-end
-function time_per_edge(args... ; n=100)
-    time_per_edge_probability(edges_to_probability(args...)..., n=n)
-end
-
-
 function hyperkron(k, group_sizes, probability_function)
     edges = []
     groups = length(group_sizes)
-    m = start0(groups)
+    m = start0(k)
     for i in 1:binomial(length(group_sizes)+k-1,k)
         next_lex!(m, groups)
         populate!(edges, group_sizes, m, probability_function(m))
@@ -117,7 +107,8 @@ end
 function hyperkron(k, group_sizes, probability::Real)
      hyperkron(k, group_sizes, m->probability)
 end
-function hyperkron_edges(k, group_sizes, edges::Integer)
-     hyperkron(k, group_sizes, edges/binomial(sum(group_sizes)+k-1,k))
+function hyperkron_edge_count(k, group_sizes, edge_count::Integer)
+     hyperkron(k, group_sizes,
+        min(1,Float64(edge_count/binomial(BigInt(sum(group_sizes)+k-1),k))))
 end
 #display(hyperkron(3,[10,10,10],a -> a[1]== a[2]==a[3] ? .01 : .001))

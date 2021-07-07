@@ -134,7 +134,10 @@ end
 next_lex!(vector, limit) = next_lex!(vector, limit, length(vector))
 function next_lex!(vector, limit, k)
     if vector[k] == limit
-        if k == 1 throw(OverflowError) end
+        if k == 1
+            throw(OverflowError("next_lex!("*
+                string(vector)*", "*string(limit)*") overflows"))
+        end
         next_lex!(vector, limit, k-1)
         vector[k] = vector[k-1]
     else
