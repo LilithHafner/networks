@@ -13,7 +13,7 @@ include("unrank.jl")
 #  p is the edge density                                          #
 #                                                                 #
 ###                                                             ###
-function generate_edges_in_cell(group_sizes, m, edges)
+function generate_edges_in_cell(group_sizes, m, probability)
   nodes_from_each_group = [count(==(i), m) for i=1:length(group_sizes)]
   option_count = binomial.(group_sizes.+nodes_from_each_group.-1, nodes_from_each_group)
   Π_option_count = vcat([1],cumprod(option_count))
@@ -21,7 +21,7 @@ function generate_edges_in_cell(group_sizes, m, edges)
   [vcat((unrank(nodes_from_each_group[i],
              (n-1)÷Π_option_count[i]%option_count[i]+1)
          .+ Σ_group_sizes[i] for i = 1:length(group_sizes))...)
-   for n = grasshopper(last(Π_option_count),edges/last(Π_option_count))]
+   for n = grasshopper(last(Π_option_count),probability)]
 end
 
 
@@ -61,5 +61,5 @@ end
 
 group_sizes = [2,4,3]
 m = [1,2,2,2]
-edges = 10
-display(generate_edges_in_cell(group_sizes, m, edges))
+probability = .2
+display(generate_edges_in_cell(group_sizes, m, probability))
