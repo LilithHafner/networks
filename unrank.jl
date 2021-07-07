@@ -65,14 +65,14 @@ function inverse_binomial(d, n)
     #Returns the lowest a such that binomial(a,d) ≥ n
     a = max(d,Int(ceil(rootfactorial(d)*n^(1/d))))
     n_a = binomial(a,d)
-    itterations = 0
+    #itterations = 0
     while n_a < n
-        itterations += 1
+    #    itterations += 1
         a += 1
         n_a *= a
         n_a ÷= a-d
     end
-    @assert itterations < d
+    #@assert itterations < d
     a
 end
 function unrank!(array, d, n)
