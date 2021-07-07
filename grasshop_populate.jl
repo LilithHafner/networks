@@ -7,7 +7,7 @@ include("unrank.jl")
 # hyper_stochastic_block_edge_count(3,fill(100000,10), 10^5); hangs
 #TODO benchmark and speed up. Right now ~14ns/byte. Possible 10x~100x speedup
 #TODO support seamless transition to bigint for larger
-function populate!(edges, group_sizes, m, probability)
+function grasshop_populate!(edges, group_sizes, m, probability)
     if probability == 0 return edges end
     # WARNING this is not quite strict enough:
     if prod(BigInt.(group_sizes[m])) > typemax(Int)
@@ -88,27 +88,8 @@ function populate!(edges, group_sizes, m, probability)
         end
     end
 end
-populate(args...) = populate!([], args...)
+grasshop_populate(args...) = grasshop_populate!([], args...)
 
-@assert populate([2,3,7], [1,2,2], 1) ==
+@assert grasshop_populate([2,3,7], [1,2,2], 1) ==
    [[1, 3, 3], [1, 3, 4], [1, 3, 5], [1, 4, 4], [1, 4, 5], [1, 5, 5],
     [2, 3, 3], [2, 3, 4], [2, 3, 5], [2, 4, 4], [2, 4, 5], [2, 5, 5]]
-
-function hyper_stochastic_block(k, group_sizes, probability_function)
-    edges = []
-    groups = length(group_sizes)
-    m = start0(k)
-    for i in 1:binomial(length(group_sizes)+k-1,k)
-        next_lex!(m, groups)
-        populate!(edges, group_sizes, m, probability_function(m))
-    end
-    return edges
-end
-function hyper_stochastic_block(k, group_sizes, probability::Real)
-     hyper_stochastic_block(k, group_sizes, m->probability)
-end
-function hyper_stochastic_block_edge_count(k, group_sizes, edge_count::Integer)
-     hyper_stochastic_block(k, group_sizes,
-        min(1,Float64(edge_count/binomial(BigInt(sum(group_sizes)+k-1),k))))
-end
-#display(hyper_stochastic_block(3,[10,10,10],a -> a[1]== a[2]==a[3] ? .01 : .001))
