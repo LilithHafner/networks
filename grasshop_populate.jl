@@ -2,11 +2,16 @@ include("unrank.jl")
 
 
 #TODO support total node count up to at least 2^30, ideally 2^60
-#TODO bugfix
 # hyper_stochastic_block_edge_count(3,fill(10000,10), 10^5); works
 # hyper_stochastic_block_edge_count(3,fill(100000,10), 10^5); hangs
-#TODO benchmark and speed up. Right now ~14ns/byte. Possible 10x~100x speedup
-#TODO support seamless transition to bigint for larger
+# Theory: prod(BigInt.(group_sizes[m])) > typemax(Int)
+#   is too generous an upper limit
+# Ideally support seamless transition to bigint for larger
+#TODO identify bottleneck for high dimension (e.g. >5)
+#TODO benchmark and speed up constant factors
+#   Possible 2x~5x speedup for low dimensions
+#   Unknkown bounds for higher dimensions.
+#TODO test increasing dimension with constant probability
 function grasshop_populate!(edges, group_sizes, m, probability)
     if probability == 0 return edges end
     # WARNING this is not quite strict enough:
@@ -29,13 +34,6 @@ function grasshop_populate!(edges, group_sizes, m, probability)
     lower_limit = Σ_group_sizes[m].+1
     current_edge = Vector(lower_limit)
     current_edge[length(current_edge)] -= 1 #Start before 1
-    #=function limit(i)
-        if i == d || m[i] != m[i+1]
-            return limit[i] #TODO benchmark factor out?
-        else
-            return current_edge[i+1]
-        end
-    end=#
 
     while true
         increment = Int(floor(k*log(1-rand())))+1 #~20.ns 17%
@@ -49,7 +47,7 @@ function grasshop_populate!(edges, group_sizes, m, probability)
             push!(edges, Vector(current_edge))
             continue
         end=#
-        #Should we special case 2D as well? (Guess: not here, but in unrank_lex!)
+        #Should we special case 2D as well? (Guess: not here, but TODO in unrank_lex!)
 
         td = 1 #trailing dimensions
         for i in length(m):-1:1#We start from the end for lexegraphic order
