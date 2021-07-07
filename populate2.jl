@@ -9,6 +9,7 @@ include("unrank.jl")
 #TODO benchmark and speed up. Right now ~14ns/byte. Possible 10x~100x speedup
 #TODO support seamless transition to bigint for larger
 function populate!(edges, group_sizes, m, probability)
+    if probability == 0 return edges end
     # WARNING entire region must fit in an Int
     @assert prod(BigInt.(group_sizes[m])) < typemax(Int)
     #O(output size)
@@ -85,28 +86,24 @@ function populate!(edges, group_sizes, m, probability)
 end
 populate(args...) = populate!([], args...)
 
-edges = []
-group_sizes = [2,4,3]
-m = [1,2,2,2]
-probability = .999
-display(populate!(edges, group_sizes, m, probability))
+@assert populate([2,3,7], [1,2,2], 1) ==
+   [[1, 3, 3], [1, 3, 4], [1, 3, 5], [1, 4, 4], [1, 4, 5], [1, 5, 5],
+    [2, 3, 3], [2, 3, 4], [2, 3, 5], [2, 4, 4], [2, 4, 5], [2, 5, 5]]
 
 using BenchmarkTools
+function edges_to_probability(group_sizes, m, edges)
+    size = prod(group_sizes[m])/
+           prod(factorial(count(x->x==i, m)) for i in 1:length(group_sizes))
+    probability = edges/size
+    group_sizes, m, probability
+end
 function time_per_edge_probability(args... ; n=100)
     lengths = []
     times = [@elapsed push!(lengths,length(populate(args...)))
             for i in 1:n]
     t,l = minimum(zip(times./lengths,lengths))
-    #l = mean(lengths)
     l, t*1e9
 end
-function time_per_edge(group_sizes, m, edges ; n=10)
-    size = prod(group_sizes[m])/prod(factorial(count(x->x==i, m)) for i in 1:length(group_sizes))
-    probability = edges/size
-    lengths = []
-    times = [@elapsed push!(lengths,length(populate(group_sizes, m, probability)))
-            for i in 1:n]
-    t,l = minimum(zip(times./lengths,lengths))
-    #l = mean(lengths)
-    l, t*1e9
+function time_per_edge(args... ; n=100)
+    time_per_edge_probability(edges_to_probability(args...)..., n=n)
 end
