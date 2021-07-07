@@ -29,8 +29,8 @@ function plot_meter_stick()
     plot(plots...,layout=(length(plots),1))
 end
 
-time_in_meters(args...; kwargs...) = time_in_meters(hyperkron, args...; kwargs...)
-time_in_meters_edge_count(args...; kwargs...) = time_in_meters(hyperkron_edge_count, args...; kwargs...)
+time_in_meters(args...; kwargs...) = time_in_meters(hyper_stochastic_block, args...; kwargs...)
+time_in_meters_edge_count(args...; kwargs...) = time_in_meters(hyper_stochastic_block_edge_count, args...; kwargs...)
 function time_in_meters(f::Function, args...; n=:auto, runtime=.1)
     k = args[1]
     if n == :auto
@@ -72,7 +72,7 @@ function benchmark(quick=false)
     disperse = quick ? 4 : 1
     plots = [
         myscatter(1000:disperse*10^5:10^6, e->1000*
-                minimum(@elapsed hyperkron_edge_count(3,fill(1000,10), e)
+                minimum(@elapsed hyper_stochastic_block_edge_count(3,fill(1000,10), e)
                     for i in 1:samples), e->1000*
                 minimum(@elapsed meter_stick(3, e)
                     for i in 1:samples),
@@ -81,21 +81,21 @@ function benchmark(quick=false)
             labels=["Actual", "Theoretical Minimum"],
             legend=(.12,.85)),
         myscatter(1000:disperse*5*10^3:10^5, n->1000*
-                minimum(@elapsed hyperkron_edge_count(3,fill(n÷10,10), 10^5)
+                minimum(@elapsed hyper_stochastic_block_edge_count(3,fill(n÷10,10), 10^5)
                     for i in 1:samples), n->1000*
                 minimum(@elapsed meter_stick(3, 10^5)
                     for i in 1:samples),
             xlabel="Total nodes", ylabel="ms",
             title="Hyperdegree 3\n10 groups\n10^5 edges\n"),
         myscatter(1:disperse*3:50, g->1000*
-                minimum(@elapsed hyperkron_edge_count(3,fill(10^4÷g,g), 3*10^5)
+                minimum(@elapsed hyper_stochastic_block_edge_count(3,fill(10^4÷g,g), 3*10^5)
                     for i in 1:samples), g->1000*
                 minimum(@elapsed meter_stick(3, 3*10^5)
                     for i in 1:samples),
             xlabel="# of groups", ylabel="ms",
             title="Hyperdegree 3\n10^4 total nodes\n3*10^5 edges\n"),
         myscatter([2:disperse:7...], k->1000*
-                minimum(@elapsed hyperkron_edge_count(k,fill(100,10), 10^5)
+                minimum(@elapsed hyper_stochastic_block_edge_count(k,fill(100,10), 10^5)
                     for i in 1:samples), k->1000*
                 minimum(@elapsed meter_stick(k, 10^5)
                     for i in 1:samples),

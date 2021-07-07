@@ -3,8 +3,8 @@ include("unrank.jl")
 
 #TODO support total node count up to at least 2^30, ideally 2^60
 #TODO bugfix
-# hyperkron_edge_count(3,fill(10000,10), 10^5); works
-# hyperkron_edge_count(3,fill(100000,10), 10^5); hangs
+# hyper_stochastic_block_edge_count(3,fill(10000,10), 10^5); works
+# hyper_stochastic_block_edge_count(3,fill(100000,10), 10^5); hangs
 #TODO benchmark and speed up. Right now ~14ns/byte. Possible 10x~100x speedup
 #TODO support seamless transition to bigint for larger
 function populate!(edges, group_sizes, m, probability)
@@ -94,7 +94,7 @@ populate(args...) = populate!([], args...)
    [[1, 3, 3], [1, 3, 4], [1, 3, 5], [1, 4, 4], [1, 4, 5], [1, 5, 5],
     [2, 3, 3], [2, 3, 4], [2, 3, 5], [2, 4, 4], [2, 4, 5], [2, 5, 5]]
 
-function hyperkron(k, group_sizes, probability_function)
+function hyper_stochastic_block(k, group_sizes, probability_function)
     edges = []
     groups = length(group_sizes)
     m = start0(k)
@@ -104,11 +104,11 @@ function hyperkron(k, group_sizes, probability_function)
     end
     return edges
 end
-function hyperkron(k, group_sizes, probability::Real)
-     hyperkron(k, group_sizes, m->probability)
+function hyper_stochastic_block(k, group_sizes, probability::Real)
+     hyper_stochastic_block(k, group_sizes, m->probability)
 end
-function hyperkron_edge_count(k, group_sizes, edge_count::Integer)
-     hyperkron(k, group_sizes,
+function hyper_stochastic_block_edge_count(k, group_sizes, edge_count::Integer)
+     hyper_stochastic_block(k, group_sizes,
         min(1,Float64(edge_count/binomial(BigInt(sum(group_sizes)+k-1),k))))
 end
-#display(hyperkron(3,[10,10,10],a -> a[1]== a[2]==a[3] ? .01 : .001))
+#display(hyper_stochastic_block(3,[10,10,10],a -> a[1]== a[2]==a[3] ? .01 : .001))
