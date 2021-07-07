@@ -1,10 +1,5 @@
 include("unrank.jl")
 
-#unrank!(vector, index, dimensions, rank)
-#increments the entries of vector starting at index and extending for dimensions
-#entries to have a new local rank equal to rank relative to
-#all values equal to vector[index] = rank of 1.
-
 #TODO support total node count up to at least 2^30, ideally 2^60
 #TODO benchmark and speed up. Right now ~14ns/byte. Possible 10x~100x speedup
 #TODO support seamless transition to bigint for larger
@@ -107,3 +102,22 @@ end
 function time_per_edge(args... ; n=100)
     time_per_edge_probability(edges_to_probability(args...)..., n=n)
 end
+
+
+function hyperkron(k, group_sizes, probability_function)
+    edges = []
+    groups = length(group_sizes)
+    m = start0(groups)
+    for i in 1:binomial(length(group_sizes)+k-1,k)
+        next_lex!(m, groups)
+        populate!(edges, group_sizes, m, probability_function(m))
+    end
+    return edges
+end
+function hyperkron(k, group_sizes, probability::Real)
+     hyperkron(k, group_sizes, m->probability)
+end
+function hyperkron_edges(k, group_sizes, edges::Integer)
+     hyperkron(k, group_sizes, edges/binomial(sum(group_sizes)+k-1,k))
+end
+#display(hyperkron(3,[10,10,10],a -> a[1]== a[2]==a[3] ? .01 : .001))
