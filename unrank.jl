@@ -74,6 +74,7 @@ function inverse_binomial(k, x)
     #@assert itterations < k
     n
 end
+
 function unrank!(array, k, x)
     if k == 0
         return array
@@ -81,7 +82,21 @@ function unrank!(array, k, x)
     array[k] = inverse_binomial(k,x)+1-k
     unrank!(array, k-1, x-binomial(array[k]+k-2,k))
 end
+function unrank(k, x)
+    @assert k >= 0
+    @assert x > 0
+    #O(k^2)
+    #for k < 10 runtime ≈ 65ns + 6ns * k + 28ns*k^2
+    #for large k runtime ≈ 15ns * k^2
+    #{2000, 120, 4, 5, 4}x the runtime of unrank{1:5}k
+    unrank!(ones(typeof(x),k), k, x)
+    #unrank!(MVector{k}(ones(typeof(x),k)), k, x)
+    # (This would require k to be const and using StaticArrays)
+end
+
 function unrank_lex!(array, k, x, limit, i, v)
+    #sets the entries of array[i:i+k] to
+    #  the lexicographically xth element of [v:limit]^k
     if k == 0
         return array
     end
@@ -96,60 +111,105 @@ function unrank_lex!(array, k, x, limit, i, v)
 end
 unrank_lex!(array, k, x, limit, i) = unrank_lex!(array, k, x, limit, i, array[i])
 unrank_lex!(array, k, x, limit)    = unrank_lex!(array, k, x, limit, 1, 1)
-
-function unrank(k, x)
-    @assert k >= 0
-    @assert x > 0
-    #O(k^2)
-    #for k < 10 runtime ≈ 65ns + 6ns * k + 28ns*k^2
-    #for large k runtime ≈ 15ns * k^2
-    #{2000, 120, 4, 5, 4}x the runtime of unrank{1:5}k
-    unrank!(ones(typeof(x),k), k, x)
-    #unrank!(MVector{k}(ones(typeof(x),k)), k, x)
-    # (This would require k to be const and using StaticArrays)
-end
+unrank_lex(k, args...) = unrank_lex!(ones(Int, k), k, args...)
 
 #A simple iterative approach for testing
 start(k) = ones(Int,k)
+function start0(k)
+    out = start(k)
+    out[k] -= 1
+    out
+end
 next!(vector) = next!(vector, length(vector))
-function next!(vector, i)
-    if i > 1 && vector[i] == vector[i-1]
-        vector[i] = 1
-        return next!(vector, i-1)
+function next!(vector, k)
+    if k > 1 && vector[k] == vector[k-1]
+        vector[k] = 1
+        return next!(vector, k-1)
     else
-        vector[i] += 1
+        vector[k] += 1
         return vector
     end
 end
+#TODO consistant style w.r.t. order of main method and aliases
+next_lex!(vector, limit) = next_lex!(vector, limit, length(vector))
+function next_lex!(vector, limit, k)
+    if vector[k] == limit
+        if k == 1 throw(OverflowError) end
+        next_lex!(vector, limit, k-1)
+        vector[k] = vector[k-1]
+    else
+        vector[k] += 1
+    end
+    vector
+end
 
 #Testing
-function test!(f,k,x=10^5)
-    j = start(k)
-    for i in 1:x
+function test!(next!,unrank,k,max_x=10^5)
+    i = start0(k)
+    for x in 1:max_x
+        next!(i)
         try
-            @assert f(i) == j
-        catch exeption
-            if i > 1
-                println("f(",i-1,") = ",f(i-1)," = ",f(i-1))
+            @assert unrank(x) == i
+        catch
+            if x > 1
+                println("unrank(",x-1,") = ",unrank(x-1)," = ",unrank(x-1))
             end
-            println("f(",i,") = ",f(i)," ≠ ",j)
-            throw(exeption)
+            println("unrank(",x,") = ",unrank(x)," ≠ ",i)
+            rethrow()
         end
-        next!(j)
     end
 end
 function quicktest!()
-    test!(vcat ∘ unrank1k,1)
-    test!(collect ∘ unrank2k,2)
-    test!(collect ∘ unrank3k,3)
-    test!(collect ∘ unrank4k,4)
-    test!(collect ∘ unrank5k,5)
-    test!(i -> reverse(unrank(1,i)),1,3*10^2)
-    test!(i -> reverse(unrank(3,i)),3,3*10^3)
-    test!(i -> reverse(unrank(17,i)),17,10^3)
+    test!(next!, vcat ∘ unrank1k,1,10^4)
+    test!(next!, collect ∘ unrank2k,2,10^4)
+    test!(next!, collect ∘ unrank3k,3,10^4)
+    test!(next!, collect ∘ unrank4k,4,10^4)
+    test!(next!, collect ∘ unrank5k,5,10^4)
 
-    println("unrank passed quicktest (unrank_lex! not tested)")
+    test!(next!, x -> reverse(unrank(1,x)),1,3*10^2)
+    test!(next!, x -> reverse(unrank(3,x)),3,3*10^3)
+    test!(next!, x -> reverse(unrank(17,x)),17,10^3)
+
+    test!(i -> next_lex!(i,300), x -> unrank_lex(1,x,300),1,300)
+    test!(i -> next_lex!(i,30), x -> unrank_lex(3,x,30),3,3*10^3)
+    test!(i -> next_lex!(i,5), x -> unrank_lex(17,x,5),17,10^3)
+
+    #Confirm that unrank_lex and unrank_lex! are consistant
+    for size in [3,10,100,1000]
+        for _ in 1:100
+            start = rand(-size:size,size)
+            i = rand(1:size)
+            v = rand(-size:size)
+            range = rand(1:size)
+            limit = v + range - 1
+            max_k = Int(floor(log(typemax(Int))/(log(range)+1)))#Keep limit^k < typemax(Int)
+            k = rand(1:min(max_k, size-i+1))
+            max_x = binomial(range+k-1, k)
+            for x in [1, max_x, rand(1:max_x,5)...]
+                copy1 = unrank_lex!(Vector(start), k, x, limit, i, v)
+                copy2 = Vector(start)
+                copy2[i:i+k-1] = unrank_lex(k, x, range) .+ (v-1)
+                try
+                    @assert copy1 == copy2
+                catch
+                    println("unrank_lex!'s copy = ",copy1," ≠ ")
+                    println("unrank_lex's copy  = ",copy2)
+                    println("for parameter values:")
+                    println("start = ",start)
+                    println("    i = ",i)
+                    println("    k = ",k)
+                    println("    v = ",v)
+                    println("limit = ",limit," (range = ",range,")")
+                    println("    x = ",x)
+                    rethrow()
+                end
+            end
+        end
+    end
+
+    #println("unrank passed quicktest")
 end
+quicktest!()#This adds ~50ms to startup times
 
 #= general unrank benchmarks
 using BenchmarkTools
