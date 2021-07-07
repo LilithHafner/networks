@@ -1,117 +1,116 @@
 # TODO
-# alpha renaming to conform to x = binomial(n,k): d -> k, n -> x, a -> n.
 # create cohesive interface (perhaps export only a varient of unrank!)
 
 #Small special case unranking
-unrank0d(n) = nothing
-unrank1d(n) = n # 0.05ns ≈ .05ns * d^2
-function unrank2d(n)
-    # O(1) for n :: Int64.
-    # Constant: 1.8ns = sqrt runtime +5% -0% (VERY FAST) ≈ .5ns * d^2
+unrank0k(x) = nothing
+unrank1k(x) = x # 0.05ns ≈ .05ns * k^2
+function unrank2k(x)
+    # O(1) for x :: Int64.
+    # Constant: 1.8ns = sqrt runtime +5% -0% (VERY FAST) ≈ .5ns * k^2
     # Max input: 2^(NN-2)-1 for IntNN
-    b = Int(round(sqrt(2n)))
-    a = n - (b*(b-1))>>1
+    b = Int(round(sqrt(2x)))
+    a = x - (b*(b-1))>>1
     #Depending on benchmark,
-    # >>1 makes unrank2d 1.1-5x faster than ÷2.
+    # >>1 makes unrank2k 1.1-5x faster than ÷2.
     b,a
 end
-function unrank3d(n)
-    # O(1) for n :: Int64.
-    # Constant: 80ns ≈ 50x unrank2d ≈ 5x memory read or write ≈ 9ns * d^2
+function unrank3k(x)
+    # O(1) for x :: Int64.
+    # Constant: 80ns ≈ 50x unrank2k ≈ 5x memory read or write ≈ 9ns * k^2
     # Max input: ??? (>= 10^8)
-    c = Int(floor((6n+(6n)^(1/3))^(1/3)))
-    n -= (c-1)*c*(c+1)÷6
-    b = Int(round(sqrt(2n)))
-    a = n - (b*(b-1))>>1
+    c = Int(floor((6x+(6x)^(1/3))^(1/3)))
+    x -= (c-1)*c*(c+1)÷6
+    b = Int(round(sqrt(2x)))
+    a = x - (b*(b-1))>>1
     c,b,a
 end
-function unrank4d(n)
-    # O(1) for n :: Int64.
-    # Constant: 100ns ≈ 1.3x unrank3d ≈ 6x memory read or write ≈ 7ns * d^2
+function unrank4k(x)
+    # O(1) for x :: Int64.
+    # Constant: 100ns ≈ 1.3x unrank3k ≈ 6x memory read or write ≈ 7ns * k^2
     # Max input: ??? (>= 10^8)
-    d = Int(floor(sqrt(sqrt(24n+2.5sqrt(24n)))-.5))
-    n -= (d-1)*d*(d+1)*(d+2)÷24
-    c = Int(floor((6n+(6n)^(1/3))^(1/3)))
-    n -= (c-1)*c*(c+1)÷6
-    b = Int(round(sqrt(2n)))
-    a = n - (b*(b-1))>>1
+    d = Int(floor(sqrt(sqrt(24x+2.5sqrt(24x)))-.5))
+    x -= (d-1)*d*(d+1)*(d+2)÷24
+    c = Int(floor((6x+(6x)^(1/3))^(1/3)))
+    x -= (c-1)*c*(c+1)÷6
+    b = Int(round(sqrt(2x)))
+    a = x - (b*(b-1))>>1
     d,c,b,a
 end
-function unrank5d(n)
-    # O(1) for n :: Int64.
-    # Constant: 200ns ≈ 2x unrank4d ≈ 11x memory read or write ≈ 8ns * d^2
+function unrank5k(x)
+    # O(1) for x :: Int64.
+    # Constant: 200ns ≈ 2x unrank4k ≈ 11x memory read or write ≈ 8ns * k^2
     # Max input: ??? (>= 10^8)
-    e1 = (120n)^(1/5)
-    e = Int(floor((120n+5*e1^3+11*e1)^(1/5)-1))
-    n -= (e-1)*e*(e+1)*(e+2)*(e+3)÷120
-    d = Int(floor(sqrt(sqrt(24n+2.5sqrt(24n)))-.5))
-    n -= (d-1)*d*(d+1)*(d+2)÷24
-    c = Int(floor((6n+(6n)^(1/3))^(1/3)))
-    n -= (c-1)*c*(c+1)÷6
-    b = Int(round(sqrt(2n)))
-    a = n - (b*(b-1))>>1
+    e1 = (120x)^(1/5)
+    e = Int(floor((120x+5*e1^3+11*e1)^(1/5)-1))
+    x -= (e-1)*e*(e+1)*(e+2)*(e+3)÷120
+    d = Int(floor(sqrt(sqrt(24x+2.5sqrt(24x)))-.5))
+    x -= (d-1)*d*(d+1)*(d+2)÷24
+    c = Int(floor((6x+(6x)^(1/3))^(1/3)))
+    x -= (c-1)*c*(c+1)÷6
+    b = Int(round(sqrt(2x)))
+    a = x - (b*(b-1))>>1
     e,d,c,b,a
 end
 
 #General unranking
-function rootfactorial(d)
-    out = 1.0 #factorial(min(n,20))^(1/n) #This seems to make unrank slower
-    for i in 2:d
-        out *= i^(1/d)
+function rootfactorial(k)
+    out = 1.0 #factorial(min(x,20))^(1/x) #This seems to make unrank slower
+    for i in 2:k
+        out *= i^(1/k)
     end
     out
 end
-function inverse_binomial(d, n)
-    #Returns the lowest a such that binomial(a,d) ≥ n
-    a = max(d,Int(ceil(rootfactorial(d)*n^(1/d))))
-    n_a = binomial(a,d)
+function inverse_binomial(k, x)
+    #Returns the lowest n such that binomial(n,k) ≥ x
+    n = max(k,Int(ceil(rootfactorial(k)*x^(1/k))))
+    n_a = binomial(n,k)
     #itterations = 0
-    while n_a < n
+    while n_a < x
     #    itterations += 1
-        a += 1
-        n_a *= a
-        n_a ÷= a-d
+        n += 1
+        n_a *= n
+        n_a ÷= n-k
     end
-    #@assert itterations < d
-    a
+    #@assert itterations < k
+    n
 end
-function unrank!(array, d, n)
-    if d == 0
+function unrank!(array, k, x)
+    if k == 0
         return array
     end
-    array[d] = inverse_binomial(d,n)+1-d
-    unrank!(array, d-1, n-binomial(array[d]+d-2,d))
+    array[k] = inverse_binomial(k,x)+1-k
+    unrank!(array, k-1, x-binomial(array[k]+k-2,k))
 end
-function unrankr!(array, d, n, limit, i, v)
-    if d == 0
+function unrank_lex!(array, k, x, limit, i, v)
+    if k == 0
         return array
     end
-    if d == 1#This special case gives ~2x speedup
-        array[i] = v + n - 1
+    if k == 1#This special case gives ~2x speedup
+        array[i] = v + x - 1
         return array
     end#TODO extend this?
-    total = binomial(limit+d-v,d)
-    ib = inverse_binomial(d,total-n+1)
-    array[i] = limit-ib+d
-    unrankr!(array, d-1, n-total+binomial(ib,d), limit, i+1, array[i])
+    total = binomial(limit+k-v,k)
+    ib = inverse_binomial(k,total-x+1)
+    array[i] = limit-ib+k
+    unrank_lex!(array, k-1, x-total+binomial(ib,k), limit, i+1, array[i])
 end
-unrankr!(array, d, n, limit, i) = unrankr!(array, d, n, limit, i, array[i])
-unrankr!(array, d, n, limit)    = unrankr!(array, d, n, limit, 1, 1)
+unrank_lex!(array, k, x, limit, i) = unrank_lex!(array, k, x, limit, i, array[i])
+unrank_lex!(array, k, x, limit)    = unrank_lex!(array, k, x, limit, 1, 1)
 
-function unrank(d, n)
-    @assert d >= 0
-    @assert n > 0
-    #O(d^2)
-    #for d < 10 runtime ≈ 65ns + 6ns * d + 28ns*d^2
-    #for large d runtime ≈ 15ns * d^2
-    #{2000, 120, 4, 5, 4}x the runtime of unrank{1:5}d
-    unrank!(ones(typeof(n),d), d, n)
-    #unrank!(MVector{d}(ones(typeof(n),d)), d, n)
-    # (This would require d to be const and using StaticArrays)
+function unrank(k, x)
+    @assert k >= 0
+    @assert x > 0
+    #O(k^2)
+    #for k < 10 runtime ≈ 65ns + 6ns * k + 28ns*k^2
+    #for large k runtime ≈ 15ns * k^2
+    #{2000, 120, 4, 5, 4}x the runtime of unrank{1:5}k
+    unrank!(ones(typeof(x),k), k, x)
+    #unrank!(MVector{k}(ones(typeof(x),k)), k, x)
+    # (This would require k to be const and using StaticArrays)
 end
 
 #A simple iterative approach for testing
-start(d) = ones(Int,d)
+start(k) = ones(Int,k)
 next!(vector) = next!(vector, length(vector))
 function next!(vector, i)
     if i > 1 && vector[i] == vector[i-1]
@@ -124,9 +123,9 @@ function next!(vector, i)
 end
 
 #Testing
-function test!(f,d,n=10^5)
-    j = start(d)
-    for i in 1:n
+function test!(f,k,x=10^5)
+    j = start(k)
+    for i in 1:x
         try
             @assert f(i) == j
         catch exeption
@@ -140,16 +139,16 @@ function test!(f,d,n=10^5)
     end
 end
 function quicktest!()
-    test!(vcat ∘ unrank1d,1)
-    test!(collect ∘ unrank2d,2)
-    test!(collect ∘ unrank3d,3)
-    test!(collect ∘ unrank4d,4)
-    test!(collect ∘ unrank5d,5)
+    test!(vcat ∘ unrank1k,1)
+    test!(collect ∘ unrank2k,2)
+    test!(collect ∘ unrank3k,3)
+    test!(collect ∘ unrank4k,4)
+    test!(collect ∘ unrank5k,5)
     test!(i -> reverse(unrank(1,i)),1,3*10^2)
     test!(i -> reverse(unrank(3,i)),3,3*10^3)
     test!(i -> reverse(unrank(17,i)),17,10^3)
 
-    println("unrank passed quicktest (unrankr! not tested)")
+    println("unrank passed quicktest (unrank_lex! not tested)")
 end
 
 #= general unrank benchmarks

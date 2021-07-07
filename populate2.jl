@@ -44,14 +44,14 @@ function populate!(edges, group_sizes, m, probability)
             push!(edges, Vector(current_edge))
             continue
         end=#
-        #Should we special case 2D as well? (Guess: not here, but in unrankr!)
+        #Should we special case 2D as well? (Guess: not here, but in unrank_lex!)
 
         td = 1 #trailing dimensions
         for i in length(m):-1:1#We start from the end for lexegraphic order
             room = binomial(upper_limit[i]-current_edge[i]+td, td)
             #if we can finish progressing to the next edge placement, finish.
             if room > increment
-                unrankr!(current_edge, td, increment+1, upper_limit[i], i)
+                unrank_lex!(current_edge, td, increment+1, upper_limit[i], i)
                 push!(edges, Vector(current_edge))
                 break
             end
@@ -69,7 +69,7 @@ function populate!(edges, group_sizes, m, probability)
                 all_room = binomial(upper_limit[i]-lower_limit[i]+td,td)
                 increment += all_room-room
                 #allocate the increment between this group and previous
-                unrankr!(current_edge, td, increment%all_room+1, upper_limit[i], i, lower_limit[i])
+                unrank_lex!(current_edge, td, increment%all_room+1, upper_limit[i], i, lower_limit[i])
                 increment ÷= all_room
                 td = 1
             else
