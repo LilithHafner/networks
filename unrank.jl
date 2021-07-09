@@ -64,14 +64,16 @@ function inverse_binomial(k, x)
     #Returns the lowest n such that binomial(n,k) ≥ x
     n = max(k,Integer(ceil(rootfactorial(k)*x^(1/k))))
     n_a = binomial(n,k)
-    #itterations = 0
-    while n_a < x
-    #    itterations += 1
+    itterations = 0
+    while n_a < x && itterations < k
+        itterations += 1
         n += 1
         n_a *= n
         n_a ÷= n-k
+        if itterations >= k
+            throw(OverflowError)#TODO confirm that this is the only plausible cause
+        end
     end
-    #@assert itterations < k
     n
 end
 

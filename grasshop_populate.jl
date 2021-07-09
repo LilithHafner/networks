@@ -14,12 +14,6 @@ include("unrank.jl")
 #TODO test increasing dimension with constant probability
 function grasshop_populate!(edges::Vector{Vector{T}}, group_sizes::Vector{T}, m, probability) where T <: Integer
     if probability == 0 return edges end
-    # WARNING this is not quite strict enough:
-    if T == Int
-        if prod(BigInt.(group_sizes[m])) > typemax(Int)
-            throw(OverflowError("Entire region must fit in an Int"))
-        end
-    end
     if probability < 0 || probability > 1
         throw(ArgumentError("edge probability "*string(probability)*" ∉ [0,1]"))
     end

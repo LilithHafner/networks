@@ -10,14 +10,14 @@ group_sizes = [3,2]#The sum of groups sizes is the total number of nodes
 #sequence of hyperdegree integers between 1 and the number of groups) and returns the
 #probability with which each edge in that block will be generated
 probability = (m) -> all(m[1] .== m) ? .9 : .1
-graph1 = hyper_stochastic_block(grasshop_populate!, hyperdegree, group_sizes, probability; edges=Vector{Int}[])
+graph1 = hyper_stochastic_block(grasshop_populate!, hyperdegree, group_sizes, probability)
 display(graph1)
 
 
 hyperdegree = 6
 group_sizes = [3,2]
-probability = .02# <- Notice that constants are allowed as well as functions
-graph2 = hyper_stochastic_block(grasshop_populate!, hyperdegree, group_sizes, probability; edges=Vector{Int}[])
+probability = .02# <- Notice that `Real`s are allowed as well as `Function`s
+graph2 = hyper_stochastic_block(grasshop_populate!, hyperdegree, group_sizes, probability)
 display(graph2)
 
 #      Select population algorithm with this argument
@@ -29,15 +29,21 @@ display(graph3)
 # calculate the requisite probability? Here's how:
 hyperdegree = 20
 group_sizes = [4,4,4,4]
-edge_count = 20# <- Specify edges
-graph3 = hyper_stochastic_block_edge_count(grasshop_populate!, hyperdegree, group_sizes, edge_count; edges=Vector{Int}[])
-display(graph3)#               ^^^^^^^^^^^
-#                                  /\
-# I was not well aquainted with the finer points of multiple dispatch when I
-# wrote this, so I was hesitant to trust it. Hence the name change.
+edge_count = 20# <- Specify edges as an Integer
+graph3 = hyper_stochastic_block(grasshop_populate!, hyperdegree, group_sizes, edge_count)
+display(graph3)
+
+# Want lots of nodes with huge block sizes
+# (i.e. on the order of or larger than typemax(Int))?
+# Specify inputs as BitInts and BigFloats:
+try
+    local g4 = hyper_stochastic_block(grasshop_populate!, 6,Int[400,300000,400],6)
+    display(g4)
+catch OverflowError
+    println("Got an overflow or inexact error? try providing input in a bigger type (e.g. BigInt & BigFloat)")
+end
+
+g4 = hyper_stochastic_block(grasshop_populate!, 6,BigInt[400,300000,400],6)
+display(g4)
 
 # Have more questions? Write to me at <hafnerda@grinnell.edu>!
-
-
-g4 = hyper_stochastic_block_edge_count(grasshop_populate!, 6,BigInt[400,300000,400],6; edges=Vector{BigInt}[])
-display(g4)
