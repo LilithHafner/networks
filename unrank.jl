@@ -62,7 +62,7 @@ function rootfactorial(k)
 end
 function inverse_binomial(k, x)
     #Returns the lowest n such that binomial(n,k) ≥ x
-    n = max(k,Int(ceil(rootfactorial(k)*x^(1/k))))
+    n = max(k,Integer(ceil(rootfactorial(k)*x^(1/k))))
     n_a = binomial(n,k)
     #itterations = 0
     while n_a < x

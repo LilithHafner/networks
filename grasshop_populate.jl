@@ -12,11 +12,13 @@ include("unrank.jl")
 #   Possible 2x~5x speedup for low dimensions
 #   Unknkown bounds for higher dimensions.
 #TODO test increasing dimension with constant probability
-function grasshop_populate!(edges, group_sizes, m, probability)
+function grasshop_populate!(edges::Vector{Vector{T}}, group_sizes::Vector{T}, m, probability) where T <: Integer
     if probability == 0 return edges end
     # WARNING this is not quite strict enough:
-    if prod(BigInt.(group_sizes[m])) > typemax(Int)
-        throw(OverflowError("Entire region must fit in an Int"))
+    if T == Int
+        if prod(BigInt.(group_sizes[m])) > typemax(Int)
+            throw(OverflowError("Entire region must fit in an Int"))
+        end
     end
     if probability < 0 || probability > 1
         throw(ArgumentError("edge probability "*string(probability)*" ∉ [0,1]"))
@@ -36,7 +38,7 @@ function grasshop_populate!(edges, group_sizes, m, probability)
     current_edge[length(current_edge)] -= 1 #Start before 1
 
     while true
-        increment = Int(floor(k*log(1-rand())))+1 #~20.ns 17%
+        increment = T(floor(k*log(1-rand())))+1 #~20.ns 17%
 
         #current_edge[length(current_edge)] += 1 #1ns
 
@@ -86,7 +88,7 @@ function grasshop_populate!(edges, group_sizes, m, probability)
         end
     end
 end
-grasshop_populate(args...) = grasshop_populate!([], args...)
+grasshop_populate(args...) = grasshop_populate!(Vector{Int}[], args...)
 
 @assert grasshop_populate([2,3,7], [1,2,2], 1) ==
    [[1, 3, 3], [1, 3, 4], [1, 3, 5], [1, 4, 4], [1, 4, 5], [1, 5, 5],
