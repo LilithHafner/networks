@@ -11,7 +11,7 @@ function snake(collection::AbstractVector{T}, size::Integer,
     end
     for i in width+1:size
         r = rand()#*
-        out[i] = r < speed ? collection[T(floor(r*k0))] : out[i-1-T(floor((r-speed)*k1))]#*
+        out[i] = r < speed ? collection[T(floor(r*k0)+1)] : out[i-1-T(floor((r-speed)*k1))]#*
     #    out[i] = rand() < speed ? rand(collection) : out[rand(i-width:i-1)] #This simplification costs a 13–20% increase in runtime
     end
     out
@@ -28,6 +28,7 @@ end
 #Basic inspection
 display(transpose(reshape(snake(10:99, 40, 5, .5), 5, 8)))
 display(snake_model(5, 99, 8, 5, .5))
+display(snake_model(3, 3, 60, 5, .5))
 
 #Benchmarking
 using BenchmarkTools
