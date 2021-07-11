@@ -10,7 +10,7 @@ function sm(args...; trial=1)
     if haskey(cache, key)
         return cache[key]
     end
-    result_tuple = @timed snake_model(args...)
+    result_tuple = @timed snakemodel1(args...)
     result = Dict(zip(keys(result_tuple), result_tuple))
     result[:graph] = result[:value]
     @time result[:wedges],result[:lcc] = wedge_distribution(result[:graph])
