@@ -18,9 +18,13 @@ function snake(collection::AbstractVector{T}, size::Integer,
 end
 
 function snake_model(hyperdegree::Integer, nodes::Integer, edges::Integer,
-                     width::Integer, speed::Real)
+                     width::Integer, speed::Real, duplicates::Bool)
     source = snake(1:nodes, hyperdegree*edges, width, speed)
-    [source[hyperdegree*(e-1)+1:hyperdegree*e] for e in 1:edges]
+    if duplicates
+        [source[hyperdegree*(e-1)+1:hyperdegree*e] for e in 1:edges]
+    else
+        collect.(collect(Set(Set(source[hyperdegree*(e-1)+1:hyperdegree*e])) for e in 1:edges))
+    end
 end
 
 
